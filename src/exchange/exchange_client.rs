@@ -33,6 +33,7 @@ use crate::{
 pub struct ExchangeClient {
     pub http_client: HttpClient,
     pub wallet: PrivateKeySigner,
+    pub master_address: Address,
     pub meta: Meta,
     pub vault_address: Option<Address>,
     pub coin_to_asset: HashMap<String, u32>,
@@ -104,6 +105,24 @@ impl ExchangeClient {
         meta: Option<Meta>,
         vault_address: Option<Address>,
     ) -> Result<ExchangeClient> {
+        Self::new_with_master_address(
+            client,
+            wallet.clone(),
+            wallet.address(), // Default master_address to wallet address
+            base_url,
+            meta,
+            vault_address,
+        ).await
+    }
+
+    pub async fn new_with_master_address(
+        client: Option<Client>,
+        wallet: PrivateKeySigner,
+        master_address: Address,
+        base_url: Option<BaseUrl>,
+        meta: Option<Meta>,
+        vault_address: Option<Address>,
+    ) -> Result<ExchangeClient> {
         let client = client.unwrap_or_default();
         let base_url = base_url.unwrap_or(BaseUrl::Mainnet);
 
@@ -126,6 +145,7 @@ impl ExchangeClient {
 
         Ok(ExchangeClient {
             wallet,
+            master_address,
             meta,
             vault_address,
             http_client: HttpClient {
@@ -326,7 +346,7 @@ impl ExchangeClient {
             _ => return Err(Error::GenericRequest("Invalid base URL".to_string())),
         };
         let info_client = InfoClient::new(None, Some(base_url)).await?;
-        let user_state = info_client.user_state(wallet.address()).await?;
+        let user_state = info_client.user_state(self.master_address).await?;
 
         let position = user_state
             .asset_positions

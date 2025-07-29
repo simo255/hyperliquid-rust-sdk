@@ -40,6 +40,7 @@ pub struct MarketMaker {
     pub info_client: InfoClient,
     pub exchange_client: ExchangeClient,
     pub user_address: Address,
+    pub master_address: Address,
 }
 
 impl MarketMaker {
@@ -51,6 +52,8 @@ impl MarketMaker {
             ExchangeClient::new(None, input.wallet, Some(BaseUrl::Testnet), None, None)
                 .await
                 .unwrap();
+
+        let master_address = exchange_client.master_address;
 
         MarketMaker {
             asset: input.asset,
@@ -74,6 +77,7 @@ impl MarketMaker {
             info_client,
             exchange_client,
             user_address,
+            master_address,
         }
     }
 
@@ -84,7 +88,7 @@ impl MarketMaker {
         self.info_client
             .subscribe(
                 Subscription::UserEvents {
-                    user: self.user_address,
+                    user: self.master_address,
                 },
                 sender.clone(),
             )
